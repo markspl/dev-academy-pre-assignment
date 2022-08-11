@@ -2,9 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"encoding/csv"
+	"errors"
 	"fmt"
+	"io"
 	"os"
-	"time"
+	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -12,6 +16,7 @@ import (
 func main() {
 	// Citybike database name
 	dbName := "database.db"
+	csvAddress := "dataset/2021-05.csv"
 
 	// Remove existing database when launching the server
 	os.Remove("./db/" + dbName)
@@ -23,6 +28,7 @@ func main() {
 
 	sqlStatement := `
 	CREATE TABLE IF NOT EXISTS Journeys (
+		Id					 INTEGER PRIMARY KEY,
 		Departure            DATETIME     ,
 		Return               DATETIME     ,
 		DepartureStationId   INTEGER     ,
@@ -39,49 +45,70 @@ func main() {
 	_, err = db.Exec(sqlStatement)
 	errorHandler(err)
 
-	// Insert data
-	stmt, err := db.Prepare(`
-	INSERT INTO Journeys(Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) values(?,?,?,?,?,?,?,?)
-	`)
+	// Open CSV example file
+	file, err := os.Open(csvAddress)
 	errorHandler(err)
 
-	// Example data #1
-	_, err = stmt.Exec("2021-05-31T23:57:25", "2021-06-01T00:05:46", "094", "Laajalahden aukio", "100", "Teljäntie", "2043", "500")
+	read := csv.NewReader(file)
+
+	// Read only the first row
+	_, err = read.Read()
 	errorHandler(err)
 
-	// Example data #2
-	_, err = stmt.Exec("2021-05-31T23:56:59", "2021-06-01T00:07:14", "082", "Töölöntulli", "113", "Pasilan asema", "1870", "611")
-	errorHandler(err)
+	// Import data from file
+	fmt.Println("Loading...")
+	idValue := 0
 
-	// Query
-	rows, err := db.Query("SELECT * FROM Journeys")
-	errorHandler(err)
+	for {
+		i := 0
+		stmtEnd := []string{}
+		var errInner error
 
-	var departureTime time.Time
-	var returnTime time.Time
-	var departureStationId int
-	var departureStationName string
-	var returnStationId int
-	var returnStationName string
-	var distance int
-	var duration int
+		// Create a bulk INSERT with 100 VALUES
+		for i < 100 {
+			r, errInner := read.Read()
 
-	for rows.Next() {
-		err = rows.Scan(&departureTime, &returnTime, &departureStationId, &departureStationName, &returnStationId, &returnStationName, &distance, &duration)
+			// No more input available
+			if errors.Is(errInner, io.EOF) {
+				break
+			}
+
+			// Change time values to SQL format (yyyy-mm-dd hh:mm:ss)
+			r[0] = strings.Replace(r[0], "T", " ", 1)
+			r[1] = strings.Replace(r[1], "T", " ", 1)
+
+			value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
+
+			// Include to same array
+			stmtEnd = append(stmtEnd, value)
+
+			// Keep Id unique
+			idValue += 1
+		}
+
+		stmtBegin := "INSERT INTO Journeys(Id, Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) VALUES"
+
+		completed := stmtBegin + " " + strings.Join(stmtEnd, ",") + ";"
+
+		// Insert data
+		_, err := db.Exec(completed)
 		errorHandler(err)
 
-		fmt.Println(departureTime)
-		fmt.Println(returnTime)
-		fmt.Println(departureStationId)
-		fmt.Println(departureStationName)
-		fmt.Println(returnStationId)
-		fmt.Println(returnStationName)
-		fmt.Println(distance)
-		fmt.Println(duration)
-		fmt.Println("===")
+		// If no input happened, let's quit outer for too.
+		if errors.Is(errInner, io.EOF) {
+			break
+		}
+		break
 	}
+	fmt.Println("Loaded.")
 
-	rows.Close()
+	// Count exported lines
+	var count int
+
+	err = db.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&count)
+	errorHandler(err)
+
+	fmt.Println("\nTotal of exported journeys:", count)
 
 	db.Close()
 }
