@@ -14,9 +14,10 @@ import (
 )
 
 func main() {
-	// Citybike database name
-	dbName := "database.db"
-	csvAddress := "dataset/2021-05.csv"
+	dbName := "database.db"             // Citybike database name
+	csvAddress := "dataset/2021-05.csv" // CSV file address (import)
+	minJourneyDist := 10.0              // Don't import journeys if m < 10m
+	minJourneyTime := 10                // Don't import journeys if t < 10s
 
 	// Remove existing database when launching the server
 	os.Remove("./db/" + dbName)
@@ -27,19 +28,19 @@ func main() {
 	errorHandler(err)
 
 	sqlStatement := `
-	CREATE TABLE IF NOT EXISTS Journeys (
-		Id					 INTEGER PRIMARY KEY,
-		Departure            DATETIME     ,
-		Return               DATETIME     ,
-		DepartureStationId   INTEGER     ,
-		DepartureStationName VARCHAR(100)     ,
-		ReturnStationId      INTEGER     ,
-		ReturnStationName    VARCHAR(100)     ,
-		Distance             INTEGER     ,
-		Duration             INTEGER
-	 );
-	 DELETE FROM Journeys;
-	`
+			CREATE TABLE IF NOT EXISTS Journeys (
+				Id					 INTEGER PRIMARY KEY,
+				Departure            TEXT,
+				Return               TEXT,
+				DepartureStationId   INTEGER,
+				DepartureStationName TEXT,
+				ReturnStationId      INTEGER,
+				ReturnStationName    TEXT,
+				Distance             INTEGER,
+				Duration             INTEGER
+			 );
+			 DELETE FROM Journeys;
+			`
 
 	// Create database table
 	_, err = db.Exec(sqlStatement)
@@ -73,17 +74,27 @@ func main() {
 				break
 			}
 
-			// Change time values to SQL format (yyyy-mm-dd hh:mm:ss)
-			r[0] = strings.Replace(r[0], "T", " ", 1)
-			r[1] = strings.Replace(r[1], "T", " ", 1)
+			// Check if journey lasted for less than 10s and distance over 10m
+			dist, err := strconv.ParseFloat(r[6], 64)
+			errorHandler(err)
+			longerTime := (dist > minJourneyDist)
+			timeA, err := strconv.Atoi(r[7])
+			errorHandler(err)
+			longerDist := (timeA > minJourneyTime)
 
-			value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
+			if longerTime && longerDist {
+				// Change time values to SQL format (yyyy-mm-dd hh:mm:ss)
+				r[0] = strings.Replace(r[0], "T", " ", 1)
+				r[1] = strings.Replace(r[1], "T", " ", 1)
 
-			// Include to same array
-			stmtEnd = append(stmtEnd, value)
+				value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
 
-			// Keep Id unique
-			idValue += 1
+				// Include to same array
+				stmtEnd = append(stmtEnd, value)
+
+				// Keep Id unique
+				idValue += 1
+			}
 		}
 
 		stmtBegin := "INSERT INTO Journeys(Id, Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) VALUES"
