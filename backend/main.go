@@ -19,9 +19,7 @@ func main() {
 	db, err := sql.Open("sqlite3", "./db/"+dbName)
 
 	// If error else than zero value ("uninitialized" value)
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	sqlStatement := `
 	CREATE TABLE IF NOT EXISTS Journeys (
@@ -39,35 +37,25 @@ func main() {
 
 	// Create database table
 	_, err = db.Exec(sqlStatement)
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	// Insert data
 	stmt, err := db.Prepare(`
 	INSERT INTO Journeys(Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) values(?,?,?,?,?,?,?,?)
 	`)
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	// Example data #1
 	_, err = stmt.Exec("2021-05-31T23:57:25", "2021-06-01T00:05:46", "094", "Laajalahden aukio", "100", "Teljäntie", "2043", "500")
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	// Example data #2
 	_, err = stmt.Exec("2021-05-31T23:56:59", "2021-06-01T00:07:14", "082", "Töölöntulli", "113", "Pasilan asema", "1870", "611")
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	// Query
 	rows, err := db.Query("SELECT * FROM Journeys")
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	var departureTime time.Time
 	var returnTime time.Time
@@ -80,9 +68,7 @@ func main() {
 
 	for rows.Next() {
 		err = rows.Scan(&departureTime, &returnTime, &departureStationId, &departureStationName, &returnStationId, &returnStationName, &distance, &duration)
-		if err != nil {
-			panic(err)
-		}
+		errorHandler(err)
 
 		fmt.Println(departureTime)
 		fmt.Println(returnTime)
@@ -98,4 +84,10 @@ func main() {
 	rows.Close()
 
 	db.Close()
+}
+
+func errorHandler(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
