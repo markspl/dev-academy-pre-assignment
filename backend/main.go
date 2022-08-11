@@ -24,7 +24,7 @@ func main() {
 	}
 
 	sqlStatement := `
-	CREATE TABLE Journeys (
+	CREATE TABLE IF NOT EXISTS Journeys (
 		Departure            DATETIME     ,
 		Return               DATETIME     ,
 		DepartureStationId   INTEGER     ,
