@@ -133,59 +133,64 @@ func main() {
 		read := csv.NewReader(file)
 
 		// Read only the first row
-		_, err = read.Read()
+		headers, err := read.Read()
 		errorHandler(err, "")
 
-		for {
-			i := 0
-			stmtEnd := []string{}
-			var errInner error
+		// Check there is 8 headers
+		if len(headers) == 8 {
+			for {
+				i := 0
+				stmtEnd := []string{}
+				var errInner error
 
-			// Create a bulk INSERT with STMTCOUNT VALUES
-			for i < STMTCOUNT {
-				r, errInner := read.Read()
+				// Create a bulk INSERT with STMTCOUNT VALUES
+				for i < STMTCOUNT {
+					r, errInner := read.Read()
 
-				// No more input available
+					// No more input available
+					if errors.Is(errInner, io.EOF) {
+						break
+					}
+
+					// Validate data before importing
+					// If the row includes incorrect values (detected by regex), skip row
+					if validateDataBeforeImport(r, idValue) {
+						// Check if journey lasted for less than 10s and distance over 10m
+						dist, err := strconv.ParseFloat(r[6], 64)
+						errorHandler(err, "")
+						longerTime := (dist > MINJOURNEYDIST)
+						timeA, err := strconv.Atoi(r[7])
+						errorHandler(err, "")
+						longerDist := (timeA > MINJOURNEYTIME)
+
+						if longerTime && longerDist {
+							value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
+
+							// Include to same array
+							stmtEnd = append(stmtEnd, value)
+
+							// Keep Id unique
+							idValue += 1
+						}
+					}
+				}
+
+				stmtBegin := "INSERT INTO Journeys(Id, Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) VALUES"
+
+				completed := stmtBegin + " " + strings.Join(stmtEnd, ",") + ";"
+
+				// Insert data
+				_, err := db.Exec(completed)
+				errorHandler(err, completed)
+
+				// If no input happened, let's quit outer for too.
 				if errors.Is(errInner, io.EOF) {
 					break
 				}
-
-				// Validate data before importing
-				// If the row includes incorrect values (detected by regex), skip row
-				if validateDataBeforeImport(r, idValue) {
-					// Check if journey lasted for less than 10s and distance over 10m
-					dist, err := strconv.ParseFloat(r[6], 64)
-					errorHandler(err, "")
-					longerTime := (dist > MINJOURNEYDIST)
-					timeA, err := strconv.Atoi(r[7])
-					errorHandler(err, "")
-					longerDist := (timeA > MINJOURNEYTIME)
-
-					if longerTime && longerDist {
-						value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
-
-						// Include to same array
-						stmtEnd = append(stmtEnd, value)
-
-						// Keep Id unique
-						idValue += 1
-					}
-				}
-			}
-
-			stmtBegin := "INSERT INTO Journeys(Id, Departure, Return, DepartureStationId, DepartureStationName, ReturnStationId, ReturnStationName, Distance, Duration) VALUES"
-
-			completed := stmtBegin + " " + strings.Join(stmtEnd, ",") + ";"
-
-			// Insert data
-			_, err := db.Exec(completed)
-			errorHandler(err, completed)
-
-			// If no input happened, let's quit outer for too.
-			if errors.Is(errInner, io.EOF) {
 				break
 			}
-			break
+		} else {
+			fmt.Printf("\nFile %v has incorrect number of headers, skip.\n", name)
 		}
 	}
 
