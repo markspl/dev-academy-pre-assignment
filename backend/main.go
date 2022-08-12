@@ -14,6 +14,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const DBNAME string = "database.db"             // Citybike database name
+const CSVADDRESS string = "dataset/2021-05.csv" // CSV file address (import)
+const MINJOURNEYDIST float64 = 10.0             // Don't import journeys if m < 10m
+const MINJOURNEYTIME int = 10                   // Don't import journeys if t < 10s
+
 func validateDataBeforeImport(data []string, id int) (errValidating bool) {
 	// Stop if value type is not correct
 	errHandler := func(value string) {
@@ -60,15 +65,10 @@ func validateDataBeforeImport(data []string, id int) (errValidating bool) {
 }
 
 func main() {
-	dbName := "database.db"             // Citybike database name
-	csvAddress := "dataset/2021-05.csv" // CSV file address (import)
-	minJourneyDist := 10.0              // Don't import journeys if m < 10m
-	minJourneyTime := 10                // Don't import journeys if t < 10s
-
 	// Remove existing database when launching the server
-	os.Remove("./db/" + dbName)
+	os.Remove("./db/" + DBNAME)
 
-	db, err := sql.Open("sqlite3", "./db/"+dbName)
+	db, err := sql.Open("sqlite3", "./db/"+DBNAME)
 
 	// If error else than zero value ("uninitialized" value)
 	errorHandler(err)
@@ -93,7 +93,7 @@ func main() {
 	errorHandler(err)
 
 	// Open CSV example file
-	file, err := os.Open(csvAddress)
+	file, err := os.Open(CSVADDRESS)
 	errorHandler(err)
 
 	read := csv.NewReader(file)
@@ -129,10 +129,10 @@ func main() {
 			// Check if journey lasted for less than 10s and distance over 10m
 			dist, err := strconv.ParseFloat(r[6], 64)
 			errorHandler(err)
-			longerTime := (dist > minJourneyDist)
+			longerTime := (dist > MINJOURNEYDIST)
 			timeA, err := strconv.Atoi(r[7])
 			errorHandler(err)
-			longerDist := (timeA > minJourneyTime)
+			longerDist := (timeA > MINJOURNEYTIME)
 
 			if longerTime && longerDist {
 				value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
