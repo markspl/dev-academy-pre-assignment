@@ -7,11 +7,57 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func validateDataBeforeImport(data []string, id int) (errValidating bool) {
+	// Stop if value type is not correct
+	errHandler := func(value string) {
+		fmt.Printf("Validation error: [%v] Value: %v - Not importing row.\n", id, value)
+
+		errValidating = false
+	}
+
+	// Validate values using regex
+	// ID only number [0-9+]
+	regexId, _ := regexp.Compile("^\\d+$")
+	// Number can have a dot between numbers
+	regexNumber, _ := regexp.Compile("^\\d+(?:\\.\\d+)?$")
+	// Time and time must be realistic (year 2000-2999) and string includes "T"
+	regexTime, _ := regexp.Compile("^[2][0-9]{3}-(0[0-9]|1[0-2])-([012][0-9]|3[0-1])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$")
+
+	// Going thru every value in array
+	if !regexTime.MatchString(data[0]) {
+		errHandler(data[0])
+	}
+	if !regexTime.MatchString(data[1]) {
+		errHandler(data[1])
+	}
+	if !regexId.MatchString(data[2]) {
+		errHandler(data[2])
+	}
+	if data[3] == "" {
+		errHandler(data[3])
+	}
+	if !regexId.MatchString(data[4]) {
+		errHandler(data[4])
+	}
+	if data[5] == "" {
+		errHandler(data[5])
+	}
+	if !regexNumber.MatchString(data[6]) {
+		errHandler(data[6])
+	}
+	if !regexNumber.MatchString(data[7]) {
+		errHandler(data[7])
+	}
+
+	return
+}
 
 func main() {
 	dbName := "database.db"             // Citybike database name
@@ -32,12 +78,12 @@ func main() {
 				Id					 INTEGER PRIMARY KEY,
 				Departure            TEXT NOT NULL,
 				Return               TEXT NOT NULL,
-				DepartureStationId   INTEGER NOT NULL,
+				DepartureStationId   TEXT NOT NULL,
 				DepartureStationName TEXT NOT NULL,
-				ReturnStationId      INTEGER NOT NULL,
+				ReturnStationId      TEXT NOT NULL,
 				ReturnStationName    TEXT NOT NULL,
-				Distance             INTEGER NOT NULL,
-				Duration             INTEGER NOT NULL
+				Distance             TEXT NOT NULL,
+				Duration             TEXT NOT NULL
 			 );
 			 DELETE FROM Journeys;
 			`
@@ -71,6 +117,12 @@ func main() {
 
 			// No more input available
 			if errors.Is(errInner, io.EOF) {
+				break
+			}
+
+			// Validate data before importing
+			// If the row includes incorrect values (detected by regex), skip row
+			if validateDataBeforeImport(r, idValue) {
 				break
 			}
 
