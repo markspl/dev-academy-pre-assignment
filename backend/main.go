@@ -83,10 +83,6 @@ func main() {
 			longerDist := (timeA > minJourneyTime)
 
 			if longerTime && longerDist {
-				// Change time values to SQL format (yyyy-mm-dd hh:mm:ss)
-				r[0] = strings.Replace(r[0], "T", " ", 1)
-				r[1] = strings.Replace(r[1], "T", " ", 1)
-
 				value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
 
 				// Include to same array
