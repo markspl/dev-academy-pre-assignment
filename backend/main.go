@@ -30,14 +30,14 @@ func main() {
 	sqlStatement := `
 			CREATE TABLE IF NOT EXISTS Journeys (
 				Id					 INTEGER PRIMARY KEY,
-				Departure            TEXT,
-				Return               TEXT,
-				DepartureStationId   INTEGER,
-				DepartureStationName TEXT,
-				ReturnStationId      INTEGER,
-				ReturnStationName    TEXT,
-				Distance             INTEGER,
-				Duration             INTEGER
+				Departure            TEXT NOT NULL,
+				Return               TEXT NOT NULL,
+				DepartureStationId   INTEGER NOT NULL,
+				DepartureStationName TEXT NOT NULL,
+				ReturnStationId      INTEGER NOT NULL,
+				ReturnStationName    TEXT NOT NULL,
+				Distance             INTEGER NOT NULL,
+				Duration             INTEGER NOT NULL
 			 );
 			 DELETE FROM Journeys;
 			`
