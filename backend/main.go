@@ -118,7 +118,7 @@ func main() {
 	for _, name := range files {
 		// Filter only CSV files
 		if !strings.HasSuffix(name, ".csv") {
-			fmt.Printf("\nFile %v is not CSV file, skip.", name)
+			fmt.Printf("File %v is not CSV file, skip.", name)
 			break
 		}
 
@@ -190,7 +190,7 @@ func main() {
 				break
 			}
 		} else {
-			fmt.Printf("\nFile %v has incorrect number of headers, skip.\n", name)
+			fmt.Printf("File %v has incorrect number of headers, skip.\n", name)
 		}
 	}
 
