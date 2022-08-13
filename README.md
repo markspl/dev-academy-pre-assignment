@@ -58,6 +58,26 @@ This is pre-assignment for Solita Dev Academy Finland (fall 2022).
 
 After filtering short (time and distance) journeys, `2021-05.csv` input file's data dropped from `814676` to `784794` rows.
 
+#### Journey list view
+##### Recommended
+- [ ] List journeys
+    - [x] GET all journeys (limited to 100) `localhost:3000/api/journeys/`
+    - [ ] Show on frontend (show departure and return stations, distance (km), and duration (min))
+
+#### Station list
+##### Recommended
+- [ ] List all stations
+
+#### Single station view
+##### Recommended
+- [ ] Show
+    - [ ] station name
+    - [ ] station address
+    - [ ] total number of journeys starting from the station
+    - [ ] total number of journeys ending at the station
+
+- - -
+
 ### Learnings ("a-HA" moments)
 - Go (Golang) as a new language
     - Using Go packages
