@@ -57,3 +57,10 @@ This is pre-assignment for Solita Dev Academy Finland (fall 2022).
 - [x] Don't import journeys that covered distances shorter than 10 meters
 
 After filtering short (time and distance) journeys, `2021-05.csv` input file's data dropped from `814676` to `784794` rows.
+
+### Learnings ("a-HA" moments)
+- Go (Golang) as a new language
+    - Using Go packages
+    - Use multiple `.go` files
+    - The file path must be relative to the folder, where `main.go` file is.
+- Creating, connecting and using databases
