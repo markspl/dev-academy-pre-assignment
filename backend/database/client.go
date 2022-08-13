@@ -21,6 +21,8 @@ const MINJOURNEYDIST float64 = 10.0                // Don't import journeys if m
 const MINJOURNEYTIME int = 10                      // Don't import journeys if t < 10s
 const STMTCOUNT int = 1000                         // How many values are imported to database (max)
 
+var Database *sql.DB
+
 func InitDatabase() {
 	// Count how long running this takes
 	timeTrack := time.Now()
@@ -36,6 +38,8 @@ func InitDatabase() {
 	if err != nil {
 		fmt.Println("File not found")
 	}
+
+	Database = db
 
 	sqlStatement := `
 			CREATE TABLE IF NOT EXISTS Journeys (
@@ -53,7 +57,7 @@ func InitDatabase() {
 			`
 
 	// Create database table
-	_, err = db.Exec(sqlStatement)
+	_, err = Database.Exec(sqlStatement)
 	errorHandler(err, "")
 
 	// Open all CSV example files
@@ -134,7 +138,7 @@ func InitDatabase() {
 				completed := stmtBegin + " " + strings.Join(stmtEnd, ",") + ";"
 
 				// Insert data
-				_, err := db.Exec(completed)
+				_, err := Database.Exec(completed)
 				errorHandler(err, completed)
 
 				// If no input happened, let's quit outer for too.
@@ -146,6 +150,9 @@ func InitDatabase() {
 		} else {
 			fmt.Printf("File %v has incorrect number of headers, skip.\n", name)
 		}
+
+		// DEV (run only one file)
+		// break // DEV
 	}
 
 	fmt.Printf("\n\nLoaded.")
@@ -153,12 +160,12 @@ func InitDatabase() {
 	// Count exported lines
 	var count int
 
-	err = db.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&count)
+	err = Database.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&count)
 	errorHandler(err, "")
 
 	fmt.Println("\nTotal of exported journeys:", count)
 
-	db.Close()
+	//Database.Close()
 
 	fmt.Printf("\nTime: %v\n", time.Since(timeTrack))
 }
