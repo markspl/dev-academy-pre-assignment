@@ -3,5 +3,7 @@ backend/database/db/*
 !backend/database/db/README.md
 
 # Exclude big CSV files, but keep the dataset folder with README file
-backend/database/dataset/*
-!backend/database/dataset/README.md
+backend/database/dataset/journeys/*
+backend/database/dataset/stations/*
+!backend/database/dataset/journeys/README.md
+!backend/database/dataset/stations/README.md

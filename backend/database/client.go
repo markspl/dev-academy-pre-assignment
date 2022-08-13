@@ -15,11 +15,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const DBADDRESS string = "database/db/database.db" // Citybike database name
-const CSVADDRESS string = "database/dataset"       // CSV file address (import)
-const MINJOURNEYDIST float64 = 10.0                // Don't import journeys if m < 10m
-const MINJOURNEYTIME int = 10                      // Don't import journeys if t < 10s
-const STMTCOUNT int = 1000                         // How many values are imported to database (max)
+const DBADDRESS string = "database/db/database.db"    // Citybike database name
+const CSVADDRESS string = "database/dataset/journeys" // CSV file address (import)
+const MINJOURNEYDIST float64 = 10.0                   // Don't import journeys if m < 10m
+const MINJOURNEYTIME int = 10                         // Don't import journeys if t < 10s
+const STMTCOUNT int = 1000                            // How many values are imported to database (max)
 
 var Database *sql.DB
 
