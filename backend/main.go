@@ -48,7 +48,7 @@ func main() {
 
 func getJourneys(writer http.ResponseWriter, req *http.Request) {
 	// Fetch data from database (limit 100)
-	rows, err := database.Database.Query("SELECT * FROM journeys ORDER BY id DEC limit 100")
+	rows, err := database.Database.Query("SELECT * FROM journeys ORDER BY id DESC limit 100")
 	errorHandler(err)
 
 	var journeys Journeys
