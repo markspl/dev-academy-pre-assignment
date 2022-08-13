@@ -1,2 +1,7 @@
-backend/db/*
-backend/dataset/*
+# Exclude big db files, but keep the db folder with README file
+backend/database/db/*
+!backend/database/db/README.md
+
+# Exclude big CSV files, but keep the dataset folder with README file
+backend/database/dataset/*
+!backend/database/dataset/README.md
