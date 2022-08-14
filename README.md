@@ -67,6 +67,7 @@ After filtering short (time and distance) journeys, `2021-05.csv` input file's d
 #### Station list
 ##### Recommended
 - [ ] List all stations
+    - [x] GET all stations `localhost:3000/api/journeys/`
 
 #### Single station view
 ##### Recommended

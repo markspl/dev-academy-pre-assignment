@@ -15,11 +15,18 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const DBADDRESS string = "database/db/database.db"    // Citybike database name
-const CSVADDRESS string = "database/dataset/journeys" // CSV file address (import)
-const MINJOURNEYDIST float64 = 10.0                   // Don't import journeys if m < 10m
-const MINJOURNEYTIME int = 10                         // Don't import journeys if t < 10s
-const STMTCOUNT int = 1000                            // How many values are imported to database (max)
+// Citybike database name
+const DBADDRESS string = "database/db/database.db"
+
+// Journeys folder (import)
+const CSVADDRESS string = "database/dataset/journeys"
+
+// List of stations
+const STATIONADDRESS string = "database/dataset/stations/Helsingin_ja_Espoon_kaupunkipyB6rA4asemat_avoin.csv"
+
+const MINJOURNEYDIST float64 = 10.0 // Don't import journeys if m < 10m
+const MINJOURNEYTIME int = 10       // Don't import journeys if t < 10s
+const STMTCOUNT int = 100000        // How many values are imported to database (max)
 
 var Database *sql.DB
 
@@ -41,25 +48,82 @@ func InitDatabase() {
 
 	Database = db
 
-	sqlStatement := `
-			CREATE TABLE IF NOT EXISTS Journeys (
-				Id					 INTEGER PRIMARY KEY,
-				Departure            TEXT NOT NULL,
-				Return               TEXT NOT NULL,
-				DepartureStationId   TEXT NOT NULL,
-				DepartureStationName TEXT NOT NULL,
-				ReturnStationId      TEXT NOT NULL,
-				ReturnStationName    TEXT NOT NULL,
-				Distance             TEXT NOT NULL,
-				Duration             TEXT NOT NULL
-			 );
-			 DELETE FROM Journeys;
-			`
+	// Create database tables
+	createDatabaseTables()
 
-	// Create database table
-	_, err = Database.Exec(sqlStatement)
+	fmt.Printf("Loading...\n\n")
+
+	// Import all journeys from ./journeys/*.csv file
+	importJourneys()
+
+	// Import stations from ./stations/Helsingin_ja_Espoon_(...).csv file
+	importStations()
+
+	fmt.Printf("\n\nLoaded.")
+
+	// Count imported lines
+	var countJourneys int
+	var countStations int
+
+	err = Database.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&countJourneys)
+	errorHandler(err, "")
+	err = Database.QueryRow("SELECT COUNT(*) FROM Stations").Scan(&countStations)
 	errorHandler(err, "")
 
+	fmt.Println("\nTotal of imported journeys:", countJourneys)
+	fmt.Println("Total of imported stations:", countStations)
+
+	//Database.Close()
+
+	fmt.Printf("\nTime: %v\n", time.Since(timeTrack))
+}
+
+func createDatabaseTables() {
+	// Journeys table
+	sqlStatementJourneys := `
+		CREATE TABLE IF NOT EXISTS Journeys (
+			Id					 INTEGER PRIMARY KEY,
+			Departure            TEXT NOT NULL,
+			Return               TEXT NOT NULL,
+			DepartureStationId   TEXT NOT NULL,
+			DepartureStationName TEXT NOT NULL,
+			ReturnStationId      TEXT NOT NULL,
+			ReturnStationName    TEXT NOT NULL,
+			Distance             TEXT NOT NULL,
+			Duration             TEXT NOT NULL
+		);
+		DELETE FROM Journeys;
+	`
+
+	// Stations table
+	sqlStatementStations := `
+		CREATE TABLE IF NOT EXISTS Stations (
+			Fid			INTEGER PRIMARY KEY,
+			Id			TEXT NOT NULL,
+			Nimi		TEXT NOT NULL,
+			Namn		TEXT NOT NULL,
+			Name		TEXT NOT NULL,
+			Osoite		TEXT NOT NULL,
+			Adress		TEXT NOT NULL,
+			Kaupunki	TEXT,
+			Stad		TEXT,
+			Operaattor	TEXT,
+			Kapasiteet	TEXT NOT NULL,
+			x			REAL NOT NULL,
+			y			REAL NOT NULL
+		);
+		DELETE FROM Stations;
+	`
+
+	// Create database table
+	_, errJ := Database.Exec(sqlStatementJourneys)
+	errorHandler(errJ, "")
+
+	_, errS := Database.Exec(sqlStatementStations)
+	errorHandler(errS, "")
+}
+
+func importJourneys() {
 	// Open all CSV example files
 	folder, err := os.Open(CSVADDRESS)
 	errorHandler(err, "")
@@ -68,15 +132,13 @@ func InitDatabase() {
 	files, err := folder.Readdirnames(0)
 	errorHandler(err, "")
 
-	// Import data from file
-	fmt.Printf("Loading...\n\n")
 	idValue := 0
 
 	// Go thru all files
 	for _, name := range files {
 		// Filter only CSV files
 		if !strings.HasSuffix(name, ".csv") {
-			fmt.Printf("File %v is not CSV file, skip.", name)
+			fmt.Printf("File %v is not CSV file, skip.\n", name)
 			break
 		}
 
@@ -103,16 +165,18 @@ func InitDatabase() {
 
 				// Create a bulk INSERT with STMTCOUNT VALUES
 				for i < STMTCOUNT {
-					r, errInner := read.Read()
+					r, err := read.Read()
+
+					errInner = err
 
 					// No more input available
-					if errors.Is(errInner, io.EOF) {
+					if errors.Is(err, io.EOF) {
 						break
 					}
 
 					// Validate data before importing
 					// If the row includes incorrect values (detected by regex), skip row
-					if validateDataBeforeImport(r, idValue) {
+					if validateJourneyDataBeforeImport(r, idValue) {
 						// Check if journey lasted for less than 10s and distance over 10m
 						dist, err := strconv.ParseFloat(r[6], 64)
 						errorHandler(err, "")
@@ -129,6 +193,7 @@ func InitDatabase() {
 
 							// Keep Id unique
 							idValue += 1
+							i += 1
 						}
 					}
 				}
@@ -145,7 +210,6 @@ func InitDatabase() {
 				if errors.Is(errInner, io.EOF) {
 					break
 				}
-				break
 			}
 		} else {
 			fmt.Printf("File %v has incorrect number of headers, skip.\n", name)
@@ -154,23 +218,140 @@ func InitDatabase() {
 		// DEV (run only one file)
 		// break // DEV
 	}
-
-	fmt.Printf("\n\nLoaded.")
-
-	// Count exported lines
-	var count int
-
-	err = Database.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&count)
-	errorHandler(err, "")
-
-	fmt.Println("\nTotal of exported journeys:", count)
-
-	//Database.Close()
-
-	fmt.Printf("\nTime: %v\n", time.Since(timeTrack))
 }
 
-func validateDataBeforeImport(data []string, id int) (validated bool) {
+func importStations() {
+	// Open all CSV example files
+	file, err := os.Open(STATIONADDRESS)
+	errorHandler(err, "")
+
+	defer file.Close()
+
+	fmt.Println("Stations file loaded. Importing...")
+
+	// Skip header row
+	read := csv.NewReader(file)
+	headers, err := read.Read()
+	errorHandler(err, "")
+
+	idValue := 0
+
+	// Check there is 13 headers
+	if len(headers) == 13 {
+		for {
+			i := 0
+			stmtEnd := []string{}
+			var errInner error
+
+			for i < 100 {
+				r, err := read.Read()
+
+				errInner = err
+
+				// No more input available
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				// Validate data before importing
+				// If the row includes incorrect values (detected by regex), skip row
+				// FYI, Some strings in dataset uses (") and (') characters
+				// Single quotes can be escaped by doubling them up.
+				if validateStationDataBeforeImport(r, r[0]) {
+					// Detect if value has single quotes
+					for i, item := range r {
+						if strings.Contains(item, "'") {
+							r[i] = strings.Replace(item, "'", "''", -1)
+						}
+					}
+
+					//value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r[1:], "','") + "')"
+					value := "('" + strings.Join(r, "','") + "')"
+
+					// Include to same array
+					stmtEnd = append(stmtEnd, value)
+					idValue += 1
+				}
+				i += 1
+			}
+
+			stmtBegin := "INSERT INTO Stations(Fid, Id, Nimi, Namn, Name, Osoite, Adress, Kaupunki, Stad, Operaattor, Kapasiteet, x, y) VALUES"
+
+			completed := stmtBegin + " " + strings.Join(stmtEnd, ",") + ";"
+
+			// Insert data
+			_, err := Database.Exec(completed)
+			errorHandler(err, completed)
+
+			if errors.Is(errInner, io.EOF) {
+				break
+			}
+		}
+
+	} else {
+		fmt.Println("Loaded stations file has incorrect number of headers, skip.")
+	}
+}
+
+func validateStationDataBeforeImport(data []string, id string) (validated bool) {
+	validated = true
+
+	// Stop if value type is not correct
+	errHandler := func(value string) {
+		// Disabled for faster loading
+		fmt.Printf("Validation error: [%v] Value: %v - Not importing row.\n", id, value)
+
+		validated = false
+	}
+
+	// Validate values using regex
+	// ID only number [0-9+]
+	regexId, _ := regexp.Compile(`^\d+$`)
+
+	// Number can have a dot between numbers
+	regexNumber, _ := regexp.Compile(`^\d+(?:\.\d+)?$`)
+
+	// Going thru every value in array
+	if !regexId.MatchString(data[0]) || data[0] == "" {
+		errHandler(data[0])
+	}
+	if !regexId.MatchString(data[1]) || data[1] == "" {
+		errHandler(data[1])
+	}
+	if data[2] == "" {
+		errHandler(data[2])
+	}
+	if data[3] == "" {
+		errHandler(data[3])
+	}
+	if data[4] == "" {
+		errHandler(data[4])
+	}
+	if data[5] == "" {
+		errHandler(data[5])
+	}
+	if data[6] == "" {
+		errHandler(data[6])
+	}
+
+	// data[7-9] can be empty (Kaupunki, Stad, Operaattor)
+
+	if !regexNumber.MatchString(data[11]) || data[10] == "" {
+		errHandler(data[10])
+	}
+	if !regexNumber.MatchString(data[11]) || data[11] == "" {
+		errHandler(data[11])
+	}
+	if !regexNumber.MatchString(data[12]) || data[12] == "" {
+		errHandler(data[12])
+	}
+
+	// Return true, if everything pass
+	// Returns false, if one of the if conditions fails
+	return
+}
+
+func validateJourneyDataBeforeImport(data []string, id int) (validated bool) {
 	validated = true
 
 	// Stop if value type is not correct
@@ -222,7 +403,7 @@ func validateDataBeforeImport(data []string, id int) (validated bool) {
 
 func errorHandler(err error, completed string) {
 	if err != nil {
-		fmt.Println(completed)
+		//fmt.Println(completed)
 		panic(err)
 	}
 }
