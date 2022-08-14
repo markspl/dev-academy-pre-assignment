@@ -127,7 +127,7 @@ func getJourneys(writer http.ResponseWriter, req *http.Request) {
 
 func getStations(writer http.ResponseWriter, req *http.Request) {
 	// Fetch all stations from database
-	rows, err := database.Database.Query("SELECT * FROM stations ORDER BY fid")
+	rows, err := database.Database.Query("SELECT * FROM stations ORDER BY id")
 	errorHandler(err)
 
 	var stations Stations
