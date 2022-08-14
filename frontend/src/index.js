@@ -6,20 +6,16 @@ import { Route, Routes } from "react-router"
 import "bootstrap/dist/css/bootstrap.min.css";
 import './index.css';
 
-import { Container } from "react-bootstrap"
 import Header from './Layouts/Header';
 import Footer from './Layouts/Footer';
 import Home from './Layouts/Home';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
+const app = ReactDOM.createRoot(document.getElementById('app'));
+app.render(
   <BrowserRouter>
     <React.StrictMode>
-      <Container>
-
-        <div className="App">
           <Header />
-          
+
           <Routes>
             <Route>
 
@@ -29,9 +25,6 @@ root.render(
           </Routes>
 
           <Footer />
-        </div>
-        
-      </Container>
     </React.StrictMode>
   </BrowserRouter>
 );
