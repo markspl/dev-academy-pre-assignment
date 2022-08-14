@@ -1,0 +1,74 @@
+import { useEffect } from "react";
+import { useState } from "react";
+import axios from "axios";
+import { useParams } from "react-router";
+
+import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css';
+
+const Station = () => {
+    const [station, setStation] = useState([]);
+    const [error, setError] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [lat, setLat] = useState();
+    const [lng, setLon] = useState();
+
+    const { stationId } = useParams();
+
+    useEffect(() => {
+        axios({
+            method: "get",
+            url: `http://localhost:3000/api/stations/${stationId}`,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).then(res => {
+            setStation(res.data);
+        }).catch(err => {
+            setError({ error: true, err, message: err.message });
+        })
+    }, [])
+
+    useEffect(() => {
+        setLat(station.x)
+        setLon(station.y)
+    })
+
+    // for console.log'ing
+    useEffect(() => {
+        if (error.error) {
+            console.error(`[Stations] Error: ${error.message}`);
+            console.error(error.err);
+        }
+    }, [error])
+
+    const RecenterAutomatically = ({ lat, lng }) => {
+        const map = useMap();
+        useEffect(() => {
+            map.setView([lat, lng]);
+            console.log(lng)
+        }, [lat, lng]);
+        return null;
+    }
+
+    if (error.error) {
+        return (
+            <p>{error.message}</p>
+        );
+    } else {
+        if (!loading) {
+            return (
+                <MapContainer center={[lat, lng]} zoom={15} scrollWheelZoom={true}>
+                    <TileLayer
+                        attribution='<a href="https://www.openstreetmap.org/copyright"></a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker position={[lat, lng]}></Marker>
+                    <RecenterAutomatically lat={lat} lng={lng} />
+                </MapContainer>
+            )
+        }
+    }
+};
+
+export default Station;
