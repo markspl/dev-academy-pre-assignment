@@ -1,10 +1,12 @@
+import { Container } from "react-bootstrap"
+
 const Footer = () => {
     return (
-        <container>
-            <footer class="my-1">
+        <Container>
+            <footer className="my-1">
                 <p className="text-center text-muted">Markus Palomäki - 2022</p>
             </footer>
-        </container>
+        </Container>
     )
 }
 
