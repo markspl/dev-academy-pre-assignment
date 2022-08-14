@@ -120,6 +120,7 @@ func getJourneys(writer http.ResponseWriter, req *http.Request) {
 	errorHandler(err)
 
 	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
 	writer.WriteHeader(http.StatusOK)
 	fmt.Fprintf(writer, "%s", string(j))
 }
@@ -144,6 +145,7 @@ func getStations(writer http.ResponseWriter, req *http.Request) {
 	errorHandler(err)
 
 	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
 	writer.WriteHeader(http.StatusOK)
 	fmt.Fprintf(writer, "%s", string(s))
 }
