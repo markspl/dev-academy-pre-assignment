@@ -10,38 +10,21 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Citybike database name
-const DBADDRESS string = "database/db/database.db"
-
-// Journeys folder (import)
-const CSVADDRESS string = "database/dataset/journeys"
-
-// List of stations
-const STATIONADDRESS string = "database/dataset/stations/Helsingin_ja_Espoon_kaupunkipyB6rA4asemat_avoin.csv"
-
-const MINJOURNEYDIST float64 = 10.0 // Don't import journeys if m < 10m
-const MINJOURNEYTIME int = 10       // Don't import journeys if t < 10s
-const STMTCOUNT int = 100000        // How many values are imported to database (max)
-
 var Database *sql.DB
 
-func InitDatabase() {
-	// Count how long running this takes
-	timeTrack := time.Now()
-
+func InitDatabase(dbAddress string) {
 	// Remove existing database when launching the server
-	err := os.Remove(DBADDRESS)
+	err := os.Remove(dbAddress)
 	if err != nil {
 		fmt.Println("Can't delete the db file, creating a new.")
 	}
 
 	// If error else than zero value ("uninitialized" value)
-	db, err := sql.Open("sqlite3", DBADDRESS)
+	db, err := sql.Open("sqlite3", dbAddress)
 	if err != nil {
 		fmt.Println("File not found")
 	}
@@ -50,32 +33,6 @@ func InitDatabase() {
 
 	// Create database tables
 	createDatabaseTables()
-
-	fmt.Printf("Loading...\n\n")
-
-	// Import all journeys from ./journeys/*.csv file
-	importJourneys()
-
-	// Import stations from ./stations/Helsingin_ja_Espoon_(...).csv file
-	importStations()
-
-	fmt.Printf("\n\nLoaded.")
-
-	// Count imported lines
-	var countJourneys int
-	var countStations int
-
-	err = Database.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&countJourneys)
-	errorHandler(err, "")
-	err = Database.QueryRow("SELECT COUNT(*) FROM Stations").Scan(&countStations)
-	errorHandler(err, "")
-
-	fmt.Println("\nTotal of imported journeys:", countJourneys)
-	fmt.Println("Total of imported stations:", countStations)
-
-	//Database.Close()
-
-	fmt.Printf("\nTime: %v\n", time.Since(timeTrack))
 }
 
 func createDatabaseTables() {
@@ -123,9 +80,9 @@ func createDatabaseTables() {
 	errorHandler(errS, "")
 }
 
-func importJourneys() {
+func ImportJourneys(journeyFolder string, stmt_count_query int, min_journey_dist float64, min_journey_time int) {
 	// Open all CSV example files
-	folder, err := os.Open(CSVADDRESS)
+	folder, err := os.Open(journeyFolder)
 	errorHandler(err, "")
 
 	defer folder.Close()
@@ -142,7 +99,7 @@ func importJourneys() {
 			break
 		}
 
-		filePath := fmt.Sprintf("%v/%v", CSVADDRESS, name)
+		filePath := fmt.Sprintf("%v/%v", journeyFolder, name)
 		file, err := os.Open(filePath)
 		errorHandler(err, "")
 
@@ -164,7 +121,7 @@ func importJourneys() {
 				var errInner error
 
 				// Create a bulk INSERT with STMTCOUNT VALUES
-				for i < STMTCOUNT {
+				for i < stmt_count_query {
 					r, err := read.Read()
 
 					errInner = err
@@ -180,10 +137,10 @@ func importJourneys() {
 						// Check if journey lasted for less than 10s and distance over 10m
 						dist, err := strconv.ParseFloat(r[6], 64)
 						errorHandler(err, "")
-						longerTime := (dist > MINJOURNEYDIST)
+						longerTime := (dist > min_journey_dist)
 						timeA, err := strconv.Atoi(r[7])
 						errorHandler(err, "")
-						longerDist := (timeA > MINJOURNEYTIME)
+						longerDist := (timeA > min_journey_time)
 
 						if longerTime && longerDist {
 							value := "('" + strconv.Itoa(idValue) + "','" + strings.Join(r, "','") + "')"
@@ -220,9 +177,9 @@ func importJourneys() {
 	}
 }
 
-func importStations() {
+func ImportStations(stationsFile string) {
 	// Open all CSV example files
-	file, err := os.Open(STATIONADDRESS)
+	file, err := os.Open(stationsFile)
 	errorHandler(err, "")
 
 	defer file.Close()

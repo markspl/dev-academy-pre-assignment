@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
-
-const PORT int = 3000
 
 type Journey struct {
 	Id                   int64  `json:"id"`
@@ -43,8 +42,30 @@ type Journeys []Journey
 type Stations []Station
 
 func main() {
+	// Load configurations
+	LoadApiConfig()
+
+	// Count how long running this takes
+	timeTrack := time.Now()
+
 	fmt.Print("\n### Initialize database\n\n")
-	database.InitDatabase()
+	database.InitDatabase(ApiConfig.DB_ADDRESS)
+
+	fmt.Printf("Loading...\n\n")
+
+	// Import all journeys from ./journeys/*.csv file
+	database.ImportJourneys(ApiConfig.JOURNEYS_FOLDER, ApiConfig.STMT_COUNT_QUERY, ApiConfig.MIN_JOURNEY_DIST, ApiConfig.MIN_JOURNEY_TIME)
+
+	// Import stations from ./stations/Helsingin_ja_Espoon_(...).csv file
+	database.ImportStations(ApiConfig.STATIONS_FILE)
+
+	fmt.Printf("\n\nLoaded.")
+
+	// Track spent time
+	fmt.Printf("\nTime: %v\n", time.Since(timeTrack))
+
+	// Get information about data in database
+	reportTableLengths()
 
 	// Initialize new router
 	router := mux.NewRouter().StrictSlash(true)
@@ -55,13 +76,27 @@ func main() {
 
 	// Start API
 	fmt.Print("\n### Launching server\n\n")
-	fmt.Printf("Starting REST API on port %v\n", PORT)
-	_, err := fmt.Println(http.ListenAndServe(fmt.Sprintf(":%v", PORT), router))
+	fmt.Printf("Starting REST API on port %v\n", ApiConfig.API_PORT)
+	_, err := fmt.Println(http.ListenAndServe(fmt.Sprintf(":%v", ApiConfig.API_PORT), router))
 	if err != nil {
 		panic(err)
 	}
 
 	database.Database.Close()
+}
+
+func reportTableLengths() {
+	// Count imported lines
+	var countJourneys int
+	var countStations int
+
+	err := database.Database.QueryRow("SELECT COUNT(*) FROM Journeys").Scan(&countJourneys)
+	errorHandler(err)
+	err = database.Database.QueryRow("SELECT COUNT(*) FROM Stations").Scan(&countStations)
+	errorHandler(err)
+
+	fmt.Println("\nTotal of imported journeys:", countJourneys)
+	fmt.Println("Total of imported stations:", countStations)
 }
 
 func getJourneys(writer http.ResponseWriter, req *http.Request) {

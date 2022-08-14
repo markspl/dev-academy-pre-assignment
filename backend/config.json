@@ -1,0 +1,9 @@
+{
+    "api_port": 3000,
+    "db_address": "database/db/database.db",
+    "journeys_folder": "database/dataset/journeys",
+    "stations_file": "database/dataset/stations/Helsingin_ja_Espoon_kaupunkipyB6rA4asemat_avoin.csv",
+    "stmt_count_query": 100000,
+    "min_journey_dist": 10.0,
+    "min_journey_time": 10
+}
