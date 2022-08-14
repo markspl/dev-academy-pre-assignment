@@ -4,6 +4,7 @@ const Sidebar = () => {
             <div className="position-sticky sidebar-sticky">
                 <ul className="nav flex-column">
                     <li class="nav-item">
+                        <a className="nav-link text-dark" href="/"><span>Home</span></a>
                         <a className="nav-link text-dark" href="#"><span>Journeys</span></a>
                         <a className="nav-link text-dark" href="#">Stations</a>
                     </li>
