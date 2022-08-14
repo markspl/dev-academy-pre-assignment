@@ -199,9 +199,8 @@ Because the project is pre-assignment, coming changes would be done to a differe
 
 ###  2.5. <a name='Screenshots'></a>Screenshots
 
+<p align="middle">
 <img title="Journeys" src="screenshots/journeys.png" style="width: 49%"/>
 <img title="Stations" src="screenshots/stations.png" style="width: 49%"/>
-
-<br>
-
-![Station](screenshots/station.png)
+<img title="Station" src="screenshots/station.png"/>
+</p>
