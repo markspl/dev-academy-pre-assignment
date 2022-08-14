@@ -11,8 +11,10 @@ import Header from './Layouts/Header';
 import Footer from './Layouts/Footer';
 import Home from './Layouts/Home';
 import Journeys from './Layouts/Journeys';
-import Sidebar from './Components/Sidebar';
 import Stations from './Layouts/Stations';
+import Station from './Layouts/Station';
+
+import Sidebar from './Components/Sidebar';
 
 const app = ReactDOM.createRoot(document.getElementById('app'));
 app.render(
@@ -28,6 +30,7 @@ app.render(
                 <Route path="/" element={<Home />} />
                 <Route path="/journeys" element={<Journeys />} />
                 <Route path="/stations" element={<Stations />} />
+                <Route path="/stations/:stationId" element={<Station />} />
               </Route>
             </Routes>
           </main>

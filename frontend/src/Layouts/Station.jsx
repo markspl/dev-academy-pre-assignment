@@ -1,22 +1,24 @@
 import { useEffect } from "react";
 import { useState } from "react";
-import { ArrowRightSquareFill, Hash, Link45deg } from "react-bootstrap-icons";
 import axios from "axios";
-import { NavLink } from "react-router-dom";
+import { useParams } from "react-router";
+import { Hash } from "react-bootstrap-icons";
 
-const Stations = () => {
-    const [stations, setStations] = useState([]);
-    const [error, setError] = useState({})
+const Station = () => {
+    const [station, setStation] = useState([]);
+    const [error, setError] = useState({});
+
+    const { stationId } = useParams();
 
     useEffect(() => {
         axios({
             method: "get",
-            url: "http://localhost:3000/api/stations",
+            url: `http://localhost:3000/api/stations/${stationId}`,
             headers: {
                 "Content-Type": "application/json",
             }
         }).then(res => {
-            setStations(res.data);
+            setStation(res.data);
         }).catch(err => {
             setError({ error: true, err, message: err.message });
         })
@@ -45,31 +47,26 @@ const Stations = () => {
                             <th scope="col">Address</th>
                             <th scope="col">Operator</th>
                             <th scope="col">Capacity</th>
-                            <th scope="col"><Link45deg /></th>
                         </tr>
                     </thead>
                     <tbody>
-                        {
-                            stations.map((s) => (
-                                <tr key={s.id}>
-                                    <td>{s.id}</td>
-                                    <td>{s.name}</td>
+                                <tr key={station.id}>
+                                <td>{station.id}</td>
+                                    <td>{station.name}</td>
                                     <td className="text-left">
-                                        {s.osoite},<br />
-                                        {s.kaupunki != " " ? (<>{s.kaupunki}</>) : "Helsinki"
+                                        {station.osoite},<br />
+                                        {station.kaupunki != " " ? (<>{station.kaupunki}</>) : "Helsinki"
                                         }
                                     </td>
-                                    <td>{s.operaattor}</td>
-                                    <td>{s.kapasiteet}</td>
-                                    <td><a class="btn btn-dark" href={`/stations/${s.id}`} role="button">Open</a></td>
+                                    <td>{station.operaattor}</td>
+                                    <td>{station.kapasiteet}</td>
                                 </tr>
-                            ))
-                        }
+
                     </tbody>
                 </table>
-            </div >
+            </div>
         )
     }
 };
 
-export default Stations;
+export default Station;
