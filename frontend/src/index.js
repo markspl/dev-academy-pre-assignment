@@ -12,6 +12,7 @@ import Footer from './Layouts/Footer';
 import Home from './Layouts/Home';
 import Journeys from './Layouts/Journeys';
 import Sidebar from './Components/Sidebar';
+import Stations from './Layouts/Stations';
 
 const app = ReactDOM.createRoot(document.getElementById('app'));
 app.render(
@@ -26,6 +27,7 @@ app.render(
               <Route>
                 <Route path="/" element={<Home />} />
                 <Route path="/journeys" element={<Journeys />} />
+                <Route path="/stations" element={<Stations />} />
               </Route>
             </Routes>
           </main>
