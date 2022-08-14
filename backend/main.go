@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/mux"
 )
@@ -24,7 +25,7 @@ type Journey struct {
 
 type Station struct {
 	FID        int64   `json:"fid"`
-	ID         int64   `json:"id"`
+	ID         string  `json:"id"` // "103", "014", "001"
 	Nimi       string  `json:"nimi"`
 	Namn       string  `json:"namn"`
 	Name       string  `json:"name"`
@@ -54,7 +55,7 @@ func main() {
 	fmt.Printf("Loading...\n\n")
 
 	// Import all journeys from ./journeys/*.csv file
-	database.ImportJourneys(ApiConfig.JOURNEYS_FOLDER, ApiConfig.STMT_COUNT_QUERY, ApiConfig.MIN_JOURNEY_DIST, ApiConfig.MIN_JOURNEY_TIME)
+	//database.ImportJourneys(ApiConfig.JOURNEYS_FOLDER, ApiConfig.STMT_COUNT_QUERY, ApiConfig.MIN_JOURNEY_DIST, ApiConfig.MIN_JOURNEY_TIME)
 
 	// Import stations from ./stations/Helsingin_ja_Espoon_(...).csv file
 	database.ImportStations(ApiConfig.STATIONS_FILE)
@@ -73,10 +74,11 @@ func main() {
 	// Register routes
 	router.HandleFunc("/api/journeys", getJourneys).Methods("GET")
 	router.HandleFunc("/api/stations", getStations).Methods("GET")
+	router.HandleFunc("/api/stations/{id:[0-9]+}", getStation).Methods("GET")
 
 	// Start API
 	fmt.Print("\n### Launching server\n\n")
-	fmt.Printf("Starting REST API on port %v\n", ApiConfig.API_PORT)
+	fmt.Printf("Started REST API on port %v\n", ApiConfig.API_PORT)
 	_, err := fmt.Println(http.ListenAndServe(fmt.Sprintf(":%v", ApiConfig.API_PORT), router))
 	if err != nil {
 		panic(err)
@@ -148,6 +150,52 @@ func getStations(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
 	writer.WriteHeader(http.StatusOK)
 	fmt.Fprintf(writer, "%s", string(s))
+}
+
+func getStation(writer http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	id := vars["id"]
+
+	// id includes letters -> set false and give correct error code
+	continueFunction := true
+
+	// Check id includes only numbers (id can start with 0)
+	for _, r := range id {
+		if unicode.IsLetter(r) {
+			continueFunction = false
+		}
+	}
+
+	if !continueFunction {
+		writer.WriteHeader(http.StatusNotFound)
+	} else {
+		// Fetch one station information
+		rows, err := database.Database.Query("SELECT * FROM Stations WHERE Id=$1", id)
+		errorHandler(err)
+
+		var s Station
+
+		for rows.Next() {
+			err = rows.Scan(&s.FID, &s.ID, &s.Nimi, &s.Namn, &s.Name, &s.Osoite, &s.Adress, &s.Kaupunki, &s.Stad, &s.Operaattor, &s.Kapasiteet, &s.X, &s.Y)
+			errorHandler(err)
+		}
+
+		if s.FID == 0 && s.ID == "" {
+			writer.Header().Set("Content-Type", "application/json")
+			writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+			writer.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(writer, "%s", "null")
+		} else {
+			// Convert to JSON
+			station, err := json.Marshal(s)
+			errorHandler(err)
+
+			writer.Header().Set("Content-Type", "application/json")
+			writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+			writer.WriteHeader(http.StatusOK)
+			fmt.Fprintf(writer, "%s", string(station))
+		}
+	}
 }
 
 func errorHandler(err error) {
