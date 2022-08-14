@@ -52,7 +52,11 @@ const Stations = () => {
                                 <tr key={s.id}>
                                     <td>{s.id}</td>
                                     <td>{s.name}</td>
-                                    <td className="text-left">{s.osoite}<br/>{s.kaupunki}</td>
+                                    <td className="text-left">
+                                        {s.osoite},<br />
+                                        {s.kaupunki != " " ? (<>{s.kaupunki}</>) : "Helsinki"
+                                        }
+                                    </td>
                                     <td>{s.operaattor}</td>
                                     <td>{s.kapasiteet}</td>
                                 </tr>
