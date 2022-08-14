@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from "react-router-dom"
 import { Route, Routes } from "react-router"
+import { Row } from 'react-bootstrap';
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import './index.css';
@@ -9,8 +10,8 @@ import './index.css';
 import Header from './Layouts/Header';
 import Footer from './Layouts/Footer';
 import Home from './Layouts/Home';
+import Journeys from './Layouts/Journeys';
 import Sidebar from './Components/Sidebar';
-import { Row } from 'react-bootstrap';
 
 const app = ReactDOM.createRoot(document.getElementById('app'));
 app.render(
@@ -24,6 +25,7 @@ app.render(
             <Routes>
               <Route>
                 <Route path="/" element={<Home />} />
+                <Route path="/journeys" element={<Journeys />} />
               </Route>
             </Routes>
           </main>
