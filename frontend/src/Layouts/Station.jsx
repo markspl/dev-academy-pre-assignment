@@ -39,6 +39,7 @@ const Station = () => {
     } else {
         return (
             <div className="stations">
+                <h2>Station - {station.name}</h2>
                 <table className="table table-sm table-borderless align-middle text-center table-hover">
                     <thead className="table-dark align-middle">
                         <tr>
@@ -50,17 +51,17 @@ const Station = () => {
                         </tr>
                     </thead>
                     <tbody>
-                                <tr key={station.id}>
-                                <td>{station.id}</td>
-                                    <td>{station.name}</td>
-                                    <td className="text-left">
-                                        {station.osoite},<br />
-                                        {station.kaupunki != " " ? (<>{station.kaupunki}</>) : "Helsinki"
-                                        }
-                                    </td>
-                                    <td>{station.operaattor}</td>
-                                    <td>{station.kapasiteet}</td>
-                                </tr>
+                        <tr key={station.id}>
+                            <td>{station.id}</td>
+                            <td>{station.name}</td>
+                            <td className="text-left">
+                                {station.osoite},<br />
+                                {station.kaupunki != " " ? (<>{station.kaupunki}</>) : "Helsinki"
+                                }
+                            </td>
+                            <td>{station.operaattor}</td>
+                            <td>{station.kapasiteet}</td>
+                        </tr>
 
                     </tbody>
                 </table>

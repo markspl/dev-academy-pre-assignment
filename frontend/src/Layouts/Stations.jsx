@@ -37,6 +37,10 @@ const Stations = () => {
     } else {
         return (
             <div className="stations">
+                <h2>Stations</h2>
+                <h4>List all stations</h4>
+                <p>Open specific station with "Open" button.</p>
+
                 <table className="table table-sm table-borderless align-middle text-center table-hover">
                     <thead className="table-dark align-middle">
                         <tr>

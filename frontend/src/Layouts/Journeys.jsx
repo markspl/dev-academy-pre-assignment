@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useState } from "react";
-import { CalendarDate, Clock, ClockHistory, Hash } from "react-bootstrap-icons";
+import { CalendarDate, Clock, Hash } from "react-bootstrap-icons";
 import axios from "axios";
 
 const Journeys = () => {
@@ -63,6 +63,9 @@ const Journeys = () => {
     } else {
         return (
             <div className="journeys">
+                <h2>Journeys</h2>
+                <h4>List all journeys</h4>
+                
                 <table className="table table-sm table-borderless align-middle text-center">
                     <thead className="table-dark align-middle">
                         <tr>
