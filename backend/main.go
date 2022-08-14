@@ -55,7 +55,7 @@ func main() {
 	fmt.Printf("Loading...\n\n")
 
 	// Import all journeys from ./journeys/*.csv file
-	//database.ImportJourneys(ApiConfig.JOURNEYS_FOLDER, ApiConfig.STMT_COUNT_QUERY, ApiConfig.MIN_JOURNEY_DIST, ApiConfig.MIN_JOURNEY_TIME)
+	database.ImportJourneys(ApiConfig.JOURNEYS_FOLDER, ApiConfig.STMT_COUNT_QUERY, ApiConfig.MIN_JOURNEY_DIST, ApiConfig.MIN_JOURNEY_TIME)
 
 	// Import stations from ./stations/Helsingin_ja_Espoon_(...).csv file
 	database.ImportStations(ApiConfig.STATIONS_FILE)
